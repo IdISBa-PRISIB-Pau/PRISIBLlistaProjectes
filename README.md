@@ -7,7 +7,7 @@
 ### Dades del projecte
 - Codi: P
 - Data inici:15/04/2024
-- Tipus de tasca: Extraccions periòdiques automatitzades
+- Tipus de tasca: 
 - Sol·licitud: 
 - Contacte:
 	- Nom: Pau Pericàs
