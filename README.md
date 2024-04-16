@@ -11,7 +11,7 @@
 - Sol·licitud: 
 - Contacte:
 	- Nom: Pau Pericàs
-	- Correu: pau.pericas@ssib.es
+	- Correu: 
 - Projecte:
 	- Titol: 
 	- Protocol:
