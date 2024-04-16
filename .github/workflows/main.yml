@@ -1,0 +1,52 @@
+name: Remove Emails from README
+
+on: [push]
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  deployments: read
+  id-token: read
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: read
+
+jobs:
+  remove-emails:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Remove emails from README
+      run: |
+        python -c "
+        import re
+        with open('README.md', 'r+') as f:
+            content = f.read()
+            new_content = re.sub(r'\\S+@\\S+', '[removed]', content)
+            if content != new_content:
+                f.seek(0)
+                f.write(new_content)
+                f.truncate()
+        "
+
+    - name: Commit and push if it's necessary
+      run: |
+        git diff
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Action"
+        git commit -am "Remove emails from README" || exit 0
+        git push
