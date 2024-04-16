@@ -11,7 +11,7 @@
 - Sol·licitud: 
 - Contacte:
 	- Nom: Pau Pericàs
-	- Correu: test@mail.com
+	- Correu: [removed]
 - Projecte:
 	- Titol: 
 	- Protocol:
@@ -36,4 +36,8 @@ Per desenvolupar aquest codi s'ha fet servir GitHub Copilot.
 
 ## Referències
 
+<<<<<<< HEAD
 ## Comunicacions  test@mail.co
+=======
+## Comunicacions  [removed]
+>>>>>>> 7af96cf6d731769775ff65c05feba21589a203e6
