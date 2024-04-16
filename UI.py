@@ -26,6 +26,7 @@ dir_label = tk.Label(root, text="Enter directory path:")
 dir_label.pack()
 
 dir_entry = tk.Entry(root)
+dir_entry.insert(0, "C:/Users/Pau/Documents")  # Insert the default directory path
 dir_entry.pack()
 
 dir_browse_button = tk.Button(root, text="Browse", command=lambda: browse_directory(dir_entry))
@@ -35,6 +36,7 @@ file_label = tk.Label(root, text="Enter output file name:")
 file_label.pack()
 
 file_entry = tk.Entry(root)
+file_entry.insert(0, "C:/Users/Pau/Documents/Projectes.csv")  # Insert the default directory path
 file_entry.pack()
 
 file_browse_button = tk.Button(root, text="Browse", command=lambda: browse_file(file_entry))
