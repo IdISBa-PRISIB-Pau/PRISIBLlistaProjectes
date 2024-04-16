@@ -36,4 +36,4 @@ Per desenvolupar aquest codi s'ha fet servir GitHub Copilot.
 
 ## Referències
 
-## Comunicacions  test@mail.com
+## Comunicacions  test@mail.co
