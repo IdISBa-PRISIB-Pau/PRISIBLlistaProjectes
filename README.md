@@ -11,7 +11,7 @@
 - Sol·licitud: 
 - Contacte:
 	- Nom: Pau Pericàs
-	- Correu: 
+	- Correu: test@mail.com
 - Projecte:
 	- Titol: 
 	- Protocol:
