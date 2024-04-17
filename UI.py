@@ -18,7 +18,7 @@ def browse_file(entry):
 def run_script(dir_entry, file_entry):
     dir_path = dir_entry.get()
     file_path = file_entry.get()
-    main.scan_repos_and_create_csv(dir_path, file_path)
+    main.scan_repos_and_create_csv(dir_path, file_path, ['SSPT_', 'PSPT'])
 
 root = tk.Tk()
 

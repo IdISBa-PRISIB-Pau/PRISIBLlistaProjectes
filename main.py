@@ -2,6 +2,9 @@ import os
 import git
 import csv
 import re
+from datetime import datetime
+from PyPDF2 import PdfReader
+from endesive import pdf
 from typing import Optional
 
 def get_last_commit_info(repo_path: str):
@@ -16,10 +19,13 @@ def extract_readme_lines(repo_path: str, num_lines: int = 5) -> Optional[str]:
             return ''.join([next(f) for _ in range(num_lines)])
     return None
 
-def scan_repos_and_create_csv(dir_path: str, csv_file: str):
+def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list = None):
+    if pdf_prefixes is None:
+        pdf_prefixes = ['SSPT','PSPT']  # Default value
+
     with open(csv_file, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["Folder Name", "Codi", "Data Inici",  "Last Commit Date", "Last Commit Author"])
+        writer.writerow(["Folder Name", "Codi", "Data Inici",  "Last Commit Date", "Last Commit Author"] + pdf_prefixes)
 
         for folder in os.listdir(dir_path):
             repo_path = os.path.join(dir_path, folder)
@@ -28,11 +34,34 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str):
                     codi = extract_field_from_readme(repo_path, "- Codi:")
                     data_inici = extract_field_from_readme(repo_path, "- Data inici:")
 
+                    pdf_statuses = []
+                    for prefix in pdf_prefixes:
+                        status = "NO"
+                        for dirpath, dirnames, filenames in os.walk(repo_path):
+                            for file in filenames:
+                                if re.match(r'^' + prefix + r'.*\d{8}.*\.pdf$', file):
+                                    date_part = re.search(r'\d{8}', file).group()  # Extract the date part of the file name
+                                    try:
+                                        datetime.strptime(date_part, '%Y%m%d')  # Check if the date part is a valid date
+                                        status = "YES"
+                                        with open(os.path.join(dirpath, file), 'rb') as f:
+                                            reader = PdfReader(f)
+                                            if reader.isEncrypted:
+                                                try:
+                                                    info = pdf.verify(f.read())
+                                                    if info[0]:
+                                                        status = "SIGNED"
+                                                        break
+                                                except:
+                                                    pass
+                                    except ValueError:
+                                        continue  # If the date part is not a valid date, ignore the file
+                        pdf_statuses.append(status)
                     if '.git' in os.listdir(repo_path):
                         commit_date, commit_author = get_last_commit_info(repo_path)
-                        writer.writerow([folder, codi,  data_inici, commit_date, commit_author])
+                        writer.writerow([folder, codi,  data_inici, commit_date, commit_author] + pdf_statuses)
                     else:
-                        writer.writerow([folder, codi, data_inici, "N/A", "N/A"])
+                        writer.writerow([folder, codi, data_inici, "N/A", "N/A"] + pdf_statuses)
             except git.InvalidGitRepositoryError:
                 print(f"{folder} is not a valid Git repository. Skipping...")
                 continue
