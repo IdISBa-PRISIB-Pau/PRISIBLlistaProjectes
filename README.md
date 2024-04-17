@@ -37,7 +37,7 @@ Per desenvolupar aquest codi s'ha fet servir GitHub Copilot.
 ## Referències
 
 <<<<<<< HEAD
-## Comunicacions  test@mail.co
+## Comunicacions  [removed]
 =======
 ## Comunicacions  [removed]
 >>>>>>> 7af96cf6d731769775ff65c05feba21589a203e6
