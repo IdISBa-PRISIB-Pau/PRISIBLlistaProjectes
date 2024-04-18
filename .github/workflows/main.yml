@@ -1,4 +1,4 @@
-name: Rpre-commit
+name: Removeemails
 
 on: [push]
 
