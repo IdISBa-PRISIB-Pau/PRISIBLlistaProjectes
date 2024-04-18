@@ -16,9 +16,12 @@ def browse_file(entry):
     entry.insert(0, file)
 
 def run_script(dir_entry, file_entry):
-    dir_path = dir_entry.get()
-    file_path = file_entry.get()
-    main.scan_repos_and_create_csv(dir_path, file_path, ['SSPT_', 'PSPT'])
+    try:
+        dir_path = dir_entry.get()
+        file_path = file_entry.get()
+        main.scan_repos_and_create_csv(dir_path, file_path, ['SSPT', 'PSPT'])
+    except Exception as e:
+        print(f"Exception occurred: {e}")
 
 root = tk.Tk()
 

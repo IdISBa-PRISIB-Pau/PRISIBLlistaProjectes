@@ -46,14 +46,9 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                                         status = "YES"
                                         with open(os.path.join(dirpath, file), 'rb') as f:
                                             reader = PdfReader(f)
-                                            if reader.isEncrypted:
-                                                try:
-                                                    info = pdf.verify(f.read())
-                                                    if info[0]:
-                                                        status = "SIGNED"
-                                                        break
-                                                except:
-                                                    pass
+                                            if is_pdf_signed(os.path.join(dirpath, file)):
+                                                status = "SIGNED"
+                                                break
                                     except ValueError:
                                         continue  # If the date part is not a valid date, ignore the file
                         pdf_statuses.append(status)
@@ -68,6 +63,12 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
             except PermissionError:
                 print(f"Permission denied for {folder}. Skipping...")
                 continue
+
+def is_pdf_signed(file_path):
+    with open(file_path, 'rb') as f:
+        reader = PdfReader(f)
+        acro_form = reader.trailer["/Root"].get("/AcroForm", None)
+        return acro_form is not None and acro_form.get("/SigFlags", 0) != 0
 
 def extract_field_from_readme(readme_path: str, field: str) -> Optional[str]:
     if not os.path.exists(readme_path+"/README.md"):
