@@ -11,7 +11,7 @@
 - Sol·licitud: 
 - Contacte:
 	- Nom: Pau Pericàs
-	- Correu: [removed]
+	- Correu: gds@gfgdfmm.ll
 - Projecte:
 	- Titol: 
 	- Protocol:
@@ -36,8 +36,4 @@ Per desenvolupar aquest codi s'ha fet servir GitHub Copilot.
 
 ## Referències
 
-<<<<<<< HEAD
-## Comunicacions  [removed]
-=======
-## Comunicacions  [removed]
->>>>>>> 7af96cf6d731769775ff65c05feba21589a203e6
+## Comunicacions  
