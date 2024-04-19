@@ -11,7 +11,7 @@
 - Sol·licitud: 
 - Contacte:
 	- Nom: Pau Pericàs
-	- Correu: gds@gfgdfmm.llgdfff
+	- Correu:
 - Projecte:
 	- Titol: 
 	- Protocol:

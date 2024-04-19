@@ -29,7 +29,7 @@ dir_label = tk.Label(root, text="Enter directory path:")
 dir_label.pack()
 
 dir_entry = tk.Entry(root)
-dir_entry.insert(0, "C:/Users/Pau/Documents")  # Insert the default directory path
+dir_entry.insert(0, "C:\\Users\\Pau\\OneDrive - ibsalut\\PRISIB\\Projectes")  # Insert the default directory path
 dir_entry.pack()
 
 dir_browse_button = tk.Button(root, text="Browse", command=lambda: browse_directory(dir_entry))

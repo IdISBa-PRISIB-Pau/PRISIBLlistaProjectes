@@ -38,17 +38,10 @@ def extract_readme_lines(repo_path: str, num_lines: int = 5) -> Optional[str]:
             return ''.join([next(f) for _ in range(num_lines)])
     return None
 
-def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list = None):
-    """
-    Scan a directory of Git repositories, extract information from each repository, and write the information to a CSV file.
 
-    Args:
-        dir_path (str): The path to the directory containing the Git repositories.
-        csv_file (str): The path to the CSV file to write to.
-        pdf_prefixes (list, optional): A list of prefixes for PDF files to look for in each repository. Defaults to ['SSPT','PSPT', 'IMP_Dictamen_CEI'].
-    """
+def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list = None):
     if pdf_prefixes is None:
-        pdf_prefixes = ['SSPT','PSPT', 'IMP_Dictamen_CEI']  # Added 'IMP_Dictamen_CEI' to the default value
+        pdf_prefixes = ['SSPT','PSPT', 'IMP_Dictamen_CEI']
 
     with open(csv_file, 'w', newline='') as file:
         writer = csv.writer(file)
@@ -59,56 +52,48 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
             try:
                 if os.path.isdir(repo_path):
                     codi = extract_field_from_readme(repo_path, "- Codi:")
+                    if codi is not None:
+                        codi = codi.replace("PRISIB","").strip()  # Strip the "PRISIB" prefix
+                        codi = codi.replace(" ","").strip()  # Strip the "PRISIB" prefix
                     data_inici = extract_field_from_readme(repo_path, "- Data inici:")
                     pdf_statuses = []
                     for prefix in pdf_prefixes:
                         status = "NO"
                         for dirpath, dirnames, filenames in os.walk(repo_path):
                             for file in filenames:
-                                if prefix == 'IMP_Dictamen_CEI':
-                                    if re.match(r'^' + prefix + r'.*\.pdf$', file):
-                                        status = "YES"
-                                        if is_pdf_signed(os.path.join(dirpath, file)):
-                                            status = "SIGNED"
-                                        break
-                                else:
+                                if prefix in file and os.path.exists(os.path.join(repo_path, 'README.md')):
                                     if re.match(r'^' + prefix + r'.*\d{8}.*\.pdf$', file):
-                                        date_part = re.search(r'\d{8}', file).group()  # Extract the date part of the file name
+                                        date_part = re.search(r'\d{8}', file).group()
                                         try:
-                                            datetime.strptime(date_part, '%Y%m%d')  # Check if the date part is a valid date
+                                            datetime.strptime(date_part, '%Y%m%d')
                                             status = "YES"
                                             if is_pdf_signed(os.path.join(dirpath, file)):
                                                 status = "SIGNED"
-                                                break
+                                            # Write the filename to the README.md file
+                                            with open(os.path.join(repo_path, 'README.md'), 'a') as readme_file:
+                                                readme_file.write(f'\n- {prefix}: {file}\n')
                                         except ValueError:
-                                            continue  # If the date part is not a valid date, ignore the file
+                                            continue
                         pdf_statuses.append(status)
+                    # Check for Data Model xlsx file
+                    data_model_status = "NO"
                     for dirpath, dirnames, filenames in os.walk(repo_path):
-                        data_model = "NO"
-                        if codi is None:
-                            print(f"No Codi found in {folder}. Skipping...")
-                            break
                         for file in filenames:
-                            codi_pattern = re.sub(' ', '[ -_]', codi)
-                            print(f'^PRISIB{codi_pattern}[ -_]Data[ -_]Model.*\\.xlsx$')
-                            if re.match(f'^PRISIB{codi_pattern}[ -_]Data[ -_]Model.*\\.xlsx$', file, re.I):
-                                data_model = "YES"
-                                print(f"Data model found in {folder}")
+                            if file.endswith('.xlsx') and 'Data Model' in file:
+                                data_model_status = "YES"
                                 break
-                            else:
-                                data_model = "NO"
-                        if data_model == "YES":
-                            break
-                    if '.git' in os.listdir(repo_path):
-                        commit_date, commit_author = get_last_commit_info(repo_path)
-                        writer.writerow([folder, codi,  data_inici, commit_date, commit_author] + pdf_statuses + [data_model])
-                    else:
-                        writer.writerow([folder, codi, data_inici, "N/A", "N/A"] + pdf_statuses + [data_model])
+                    last_commit_date, last_commit_author = get_last_commit_info(repo_path)
+                    writer.writerow([folder, codi, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
+                        data_model_status])
             except git.InvalidGitRepositoryError:
                 print(f"{folder} is not a valid Git repository. Skipping...")
+                writer.writerow([folder, codi, data_inici, 'not a Git repository', 'not a Git repository'] + pdf_statuses + [
+                    data_model_status])
                 continue
             except PermissionError:
                 print(f"Permission denied for {folder}. Skipping...")
+                writer.writerow([folder, codi, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
+                    data_model_status])
                 continue
 
 def is_pdf_signed(file_path):
@@ -121,39 +106,30 @@ def is_pdf_signed(file_path):
     Returns:
         bool: True if the PDF is signed, False otherwise.
     """
-    with open(file_path, 'rb') as f:
-        reader = PdfReader(f)
-        acro_form = reader.trailer["/Root"].get("/AcroForm", None)
-        return acro_form is not None and acro_form.get("/SigFlags", 0) != 0
+    try:
+        with open(file_path, 'rb') as f:
+            reader = PdfReader(f)
+            acro_form = reader.trailer["/Root"].get("/AcroForm", None)
+            return acro_form is not None and acro_form.get("/SigFlags", 0) != 0
+    except AttributeError:
+        print(f"Error reading PDF file at {file_path}. Skipping...")
+        return False
 
-def extract_field_from_readme(readme_path: str, field: str) -> Optional[str]:
-    """
-    Extract a field from a README.md file in a repository.
-
-    Args:
-        readme_path (str): The path to the repository.
-        field (str): The name of the field to extract.
-
-    Returns:
-        Optional[str]: The value of the field, or None if the field was not found.
-    """
-    if not os.path.exists(readme_path+"/README.md"):
-        print(f"{readme_path}/README.md Not Found")
-        return None
-
-    with open(readme_path+"/README.md", 'r') as f:
-        print(f"Reading {readme_path}/README.md ")
-        lines = f.readlines()
-
-    for line in lines:
-        # If the line starts with the field name, return the rest of the line
-        match = re.match(r'^\s*' + re.escape(field), line)
-        if match:
-            return line[len(match.group()):].strip()
-
-    # If the field was not found in the README.md file, return None
-    print(f"{field} Not Found in {readme_path}/README.md ")
-
+def extract_field_from_readme(repo_path: str, field: str) -> Optional[str]:
+    readme_path = os.path.join(repo_path, 'README.md')
+    encodings = ['utf-8', 'ISO-8859-1', 'windows-1252']  # Add more encodings if needed
+    for encoding in encodings:
+        try:
+            with open(readme_path, 'r', encoding=encoding) as file:
+                for line in file:
+                    if line.startswith(field):
+                        return line[len(field):].strip()
+        except UnicodeDecodeError:
+            continue
+        except FileNotFoundError:
+            print(f"{readme_path} Not Found")
+            return None
+    print(f"Could not decode {readme_path} with any of the tried encodings.")
     return None
 # Usage
 # scan_repos_and_create_csv('/path/to/your/folder', 'output.csv')
