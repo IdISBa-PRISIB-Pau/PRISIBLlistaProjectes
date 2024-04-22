@@ -19,7 +19,7 @@ def run_script(dir_entry, file_entry):
     try:
         dir_path = dir_entry.get()
         file_path = file_entry.get()
-        main.scan_repos_and_create_csv(dir_path, file_path, ['SSPT', 'PSPT', 'IMP_Dictamen_CEI'])
+        main.scan_repos_and_create_csv(dir_path, file_path, ['SSPT', 'PSPT'])
     except Exception as e:
         print(f"Exception occurred: {e}")
 
@@ -29,7 +29,7 @@ dir_label = tk.Label(root, text="Enter directory path:")
 dir_label.pack()
 
 dir_entry = tk.Entry(root)
-dir_entry.insert(0, "C:\\Users\\Pau\\OneDrive - ibsalut\\PRISIB\\Projectes")  # Insert the default directory path
+dir_entry.insert(0, "C:/Users/Pau/Documents")  # Insert the default directory path
 dir_entry.pack()
 
 dir_browse_button = tk.Button(root, text="Browse", command=lambda: browse_directory(dir_entry))

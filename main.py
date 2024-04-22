@@ -41,11 +41,11 @@ def extract_readme_lines(repo_path: str, num_lines: int = 5) -> Optional[str]:
 
 def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list = None):
     if pdf_prefixes is None:
-        pdf_prefixes = ['SSPT','PSPT', 'IMP_Dictamen_CEI']
+        pdf_prefixes = ['SSPT','PSPT']
 
     with open(csv_file, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["Folder Name", "Codi", "Data Inici", "Last Commit Date", "Last Commit Author"] + pdf_prefixes + ["Data Model"])
+        writer.writerow(["Folder Name", "Codi", "Data Inici", "Last Commit Date", "Last Commit Author"] + pdf_prefixes + ["Dictamen_CEI", "Data Model"])
 
         for folder in os.listdir(dir_path):
             repo_path = os.path.join(dir_path, folder)
@@ -70,25 +70,61 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                                             if is_pdf_signed(os.path.join(dirpath, file)):
                                                 status = "SIGNED"
                                             # Write the filename to the README.md file
-                                            with open(os.path.join(repo_path, 'README.md'), 'a') as readme_file:
-                                                readme_file.write(f'\n- {prefix}: {file}\n')
+                                            with open(os.path.join(repo_path, 'README.md'), 'r', encoding='utf-8') as readme_file:
+                                                lines = readme_file.readlines()
+                                            with open(os.path.join(repo_path, 'README.md'), 'w', encoding='utf-8') as readme_file:
+                                                if prefix == 'SSPT':
+                                                    pattern = re.compile(".*- Sol.?licitud: ")
+                                                if prefix == 'PSPT':
+                                                    pattern = re.compile(".*- Pressupost: ")
+                                                for line in lines:
+                                                    if pattern.match(line) and file not in line:
+                                                        line = line.strip() + ' ' + file + '\n'
+                                                    readme_file.write(line)
                                         except ValueError:
                                             continue
                         pdf_statuses.append(status)
+                    # Check for dictamen ceim file
+                    ceim_status = "NO"
+                    for dirpath, dirnames, filenames in os.walk(repo_path):
+                        for file in filenames:
+                            if re.match(r'^.*Dictamen_CEI.*\.pdf$', file) and os.path.exists(os.path.join(repo_path, 'README.md')):
+                                ceim_status = "YES"
+                                if is_pdf_signed(os.path.join(dirpath, file)):
+                                    ceim_status = "SIGNED"
+                                    # Write the filename to the README.md file
+                                with open(os.path.join(repo_path, 'README.md'), 'r',
+                                              encoding='utf-8') as readme_file:
+                                    lines = readme_file.readlines()
+                                with open(os.path.join(repo_path, 'README.md'), 'w',
+                                              encoding='utf-8') as readme_file:
+                                    for line in lines:
+                                        if "Dictamen CEIB" in line and file not in line:
+                                            line = line + ' ' + file + '\n'
+                                        readme_file.write(line)
+                                break
                     # Check for Data Model xlsx file
                     data_model_status = "NO"
                     for dirpath, dirnames, filenames in os.walk(repo_path):
                         for file in filenames:
                             if file.endswith('.xlsx') and 'Data Model' in file:
                                 data_model_status = "YES"
+                                with open(os.path.join(repo_path, 'README.md'), 'r', encoding='utf-8') as readme_file:
+                                    lines = readme_file.readlines()
+                                with open(os.path.join(repo_path, 'README.md'), 'w', encoding='utf-8') as readme_file:
+                                    pattern = re.compile(".*- Data Model:.*")
+                                    for line in lines:
+                                        if pattern.match(line) and file not in line:
+                                            line = line + ' ' + file + '\n'
+                                        readme_file.write(line)
                                 break
                     last_commit_date, last_commit_author = get_last_commit_info(repo_path)
-                    writer.writerow([folder, codi, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
-                        data_model_status])
+                    writer.writerow([folder, codi, data_inici, last_commit_date, last_commit_author] + pdf_statuses +
+                                    [ceim_status, data_model_status])
             except git.InvalidGitRepositoryError:
                 print(f"{folder} is not a valid Git repository. Skipping...")
-                writer.writerow([folder, codi, data_inici, 'not a Git repository', 'not a Git repository'] + pdf_statuses + [
-                    data_model_status])
+                writer.writerow([folder, codi, data_inici, 'not a Git repository', 'not a Git repository'] +
+                                pdf_statuses + [ceim_status, data_model_status])
                 continue
             except PermissionError:
                 print(f"Permission denied for {folder}. Skipping...")
