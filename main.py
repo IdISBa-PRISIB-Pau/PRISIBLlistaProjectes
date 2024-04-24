@@ -39,13 +39,15 @@ def extract_readme_lines(repo_path: str, num_lines: int = 5) -> Optional[str]:
     return None
 
 
-def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list = None):
+def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list = None, append_to_csv: bool = False):
     if pdf_prefixes is None:
         pdf_prefixes = ['SSPT','PSPT']
 
-    with open(csv_file, 'w', newline='') as file:
+    with open(csv_file, 'a' if append_to_csv else 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["Folder Name", "Codi", "Data Inici", "Last Commit Date", "Last Commit Author"] + pdf_prefixes + ["Dictamen_CEI", "Data Model"])
+        writer.writerow(["Folder Name", "Codi", "Sol·licitant", "Correu", "Data Inici", "Last Commit Date",
+                         "Last Commit Author"] + pdf_prefixes + ["Dictamen_CEI", "Data Model", "data_model",
+                                                                 "dictamen_cei", "solicitud", "pressupost"])
 
         for folder in os.listdir(dir_path):
             repo_path = os.path.join(dir_path, folder)
@@ -56,6 +58,12 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                         codi = codi.replace("PRISIB","").strip()  # Strip the "PRISIB" prefix
                         codi = codi.replace(" ","").strip()  # Strip the "PRISIB" prefix
                     data_inici = extract_field_from_readme(repo_path, "- Data inici:")
+                    data_model = extract_field_from_readme(repo_path, "- Data Model:")
+                    dictamen_cei = extract_field_from_readme(repo_path, "- Dictamen CEIB:")
+                    solicitud = extract_field_from_readme(repo_path, "- Sol·licitud:")
+                    pressupost = extract_field_from_readme(repo_path, "- Pressupost:")
+                    nom = extract_field_from_readme(repo_path, "- Nom:")
+                    email = extract_field_from_readme(repo_path, "- Correu:")
                     pdf_statuses = []
                     for prefix in pdf_prefixes:
                         status = "NO"
@@ -119,19 +127,93 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                                         readme_file.write(line)
                                 break
                     last_commit_date, last_commit_author = get_last_commit_info(repo_path)
-                    writer.writerow([folder, codi, data_inici, last_commit_date, last_commit_author] + pdf_statuses +
-                                    [ceim_status, data_model_status])
+                    writer.writerow(
+                        [folder, codi, nom, email, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
+                            data_model_status, data_model, dictamen_cei, solicitud, pressupost])
             except git.InvalidGitRepositoryError:
                 print(f"{folder} is not a valid Git repository. Skipping...")
-                writer.writerow([folder, codi, data_inici, 'not a Git repository', 'not a Git repository'] +
-                                pdf_statuses + [ceim_status, data_model_status])
+                writer.writerow([folder, codi, nom, email, data_inici, 'not a repo', 'not a repo'] + pdf_statuses + [
+                    data_model_status, data_model, dictamen_cei, solicitud, pressupost])
                 continue
             except PermissionError:
                 print(f"Permission denied for {folder}. Skipping...")
-                writer.writerow([folder, codi, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
-                    data_model_status])
+                writer.writerow([folder, codi, nom, email, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
+                    data_model_status, data_model, dictamen_cei, solicitud, pressupost])
                 continue
+def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixes: list = None, append_to_csv: bool = False):
+    # This function is similar to scan_repos_and_create_csv, but it doesn't write to the README.md files
+    # Copy the body of scan_repos_and_create_csv here, but remove or comment out the parts that write to the README.md files
+    if pdf_prefixes is None:
+        pdf_prefixes = ['SSPT','PSPT']
 
+    with open(csv_file, 'a' if append_to_csv else 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Folder Name", "Codi", "Sol·licitant", "Correu", "Data Inici", "Last Commit Date",
+                         "Last Commit Author"] + pdf_prefixes + ["Dictamen_CEI", "Data Model", "data_model",
+                                                                 "dictamen_cei", "solicitud", "pressupost"])
+        for folder in os.listdir(dir_path):
+            repo_path = os.path.join(dir_path, folder)
+            try:
+                if os.path.isdir(repo_path):
+                    codi = extract_field_from_readme(repo_path, "- Codi:")
+                    if codi is not None:
+                        codi = codi.replace("PRISIB", "").strip()  # Strip the "PRISIB" prefix
+                        codi = codi.replace(" ", "").strip()  # Strip the "PRISIB" prefix
+                    else:
+                        print(f"No 'Codi' field found in README.md for {repo_path}")
+                    data_inici = extract_field_from_readme(repo_path, "- Data inici:")
+                    data_model = extract_field_from_readme(repo_path, "- Data Model:")
+                    dictamen_cei = extract_field_from_readme(repo_path, "- Dictamen CEIB:")
+                    solicitud = extract_field_from_readme(repo_path, "- Sol·licitud:")
+                    pressupost = extract_field_from_readme(repo_path, "- Pressupost:")
+                    nom = extract_field_from_readme(repo_path, "	- Nom: ")
+                    email = extract_field_from_readme(repo_path, "	- Correu:")
+                    pdf_statuses = []
+                    for prefix in pdf_prefixes:
+                        status = "NO"
+                        for dirpath, dirnames, filenames in os.walk(repo_path):
+                            for file in filenames:
+                                if prefix in file and os.path.exists(os.path.join(repo_path, 'README.md')):
+                                    if re.match(r'^' + prefix + r'.*\d{8}.*\.pdf$', file):
+                                        date_part = re.search(r'\d{8}', file).group()
+                                        try:
+                                            datetime.strptime(date_part, '%Y%m%d')
+                                            status = "YES"
+                                            if is_pdf_signed(os.path.join(dirpath, file)):
+                                                status = "SIGNED"
+                                        except ValueError:
+                                            continue
+                        pdf_statuses.append(status)
+                    # Check for dictamen ceim file
+                    ceim_status = "NO"
+                    for dirpath, dirnames, filenames in os.walk(repo_path):
+                        for file in filenames:
+                            if re.match(r'^.*Dictamen_CEI.*\.pdf$', file) and os.path.exists(os.path.join(repo_path, 'README.md')):
+                                ceim_status = "YES"
+                                if is_pdf_signed(os.path.join(dirpath, file)):
+                                    ceim_status = "SIGNED"
+                                break
+                    # Check for Data Model xlsx file
+                    data_model_status = "NO"
+                    for dirpath, dirnames, filenames in os.walk(repo_path):
+                        if codi is not None:
+                            for file in filenames:
+                                if file.endswith('.xlsx') and 'Data Model' in file and codi in file:
+                                    data_model_status = "YES"
+                    last_commit_date, last_commit_author = get_last_commit_info(repo_path)
+                    writer.writerow(
+                        [folder, codi, nom, email, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
+                            data_model_status, data_model, dictamen_cei, solicitud, pressupost])
+            except git.InvalidGitRepositoryError:
+                print(f"{folder} is not a valid Git repository. Skipping...")
+                writer.writerow([folder, codi, nom, email, data_inici, 'not a repo', 'not a repo'] + pdf_statuses + [
+                    data_model_status, data_model, dictamen_cei, solicitud, pressupost])
+                continue
+            except PermissionError:
+                print(f"Permission denied for {folder}. Skipping...")
+                writer.writerow([folder, codi, nom, email, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
+                    data_model_status, data_model, dictamen_cei, solicitud, pressupost])
+                continue
 def is_pdf_signed(file_path):
     """
     Check if a PDF file is signed.
