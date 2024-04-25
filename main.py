@@ -19,7 +19,7 @@ def get_last_commit_info(repo_path: str):
     """
     repo = git.Repo(repo_path)
     last_commit = next(repo.iter_commits('master', max_count=1))
-    return last_commit.committed_datetime, last_commit.author.name
+    return last_commit.committed_datetime, last_commit.author.name, last_commit.message
 
 def extract_readme_lines(repo_path: str, num_lines: int = 5) -> Optional[str]:
     """
@@ -45,10 +45,14 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
 
     with open(csv_file, 'a' if append_to_csv else 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["Folder Name", "Codi", "Sol·licitant", "Correu", "Data Inici", "Last Commit Date",
-                         "Last Commit Author"] + pdf_prefixes + ["Dictamen_CEI", "Data Model", "data_model",
-                                                                 "dictamen_cei", "solicitud", "pressupost"])
-
+        if not append_to_csv:
+            writer.writerow(["Folder Name", "Codi", "Status", "Sol·licitant", "Correu", "Data Inici", "Last Commit Date",
+                             "Last Commit Author", "Last Commit msg"] + pdf_prefixes + ["Dictamen_CEI",
+                                                                                                  "Data Model",
+                                                                                                  "data_model",
+                                                                                                  "dictamen_cei",
+                                                                                                  "solicitud",
+                                                                                                  "pressupost"])
         for folder in os.listdir(dir_path):
             repo_path = os.path.join(dir_path, folder)
             try:
@@ -64,6 +68,7 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                     pressupost = extract_field_from_readme(repo_path, "- Pressupost:")
                     nom = extract_field_from_readme(repo_path, "- Nom:")
                     email = extract_field_from_readme(repo_path, "- Correu:")
+                    project_status = extract_status_from_readme(repo_path)
                     pdf_statuses = []
                     for prefix in pdf_prefixes:
                         status = "NO"
@@ -75,6 +80,10 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                                         try:
                                             datetime.strptime(date_part, '%Y%m%d')
                                             status = "YES"
+                                            if prefix == 'SSPT':
+                                                solicitud = file
+                                            if prefix == 'PSPT':
+                                                pressupost = file
                                             if is_pdf_signed(os.path.join(dirpath, file)):
                                                 status = "SIGNED"
                                             # Write the filename to the README.md file
@@ -98,6 +107,7 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                         for file in filenames:
                             if re.match(r'^.*Dictamen_CEI.*\.pdf$', file) and os.path.exists(os.path.join(repo_path, 'README.md')):
                                 ceim_status = "YES"
+                                dictamen_cei = file
                                 if is_pdf_signed(os.path.join(dirpath, file)):
                                     ceim_status = "SIGNED"
                                     # Write the filename to the README.md file
@@ -107,38 +117,45 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                                 with open(os.path.join(repo_path, 'README.md'), 'w',
                                               encoding='utf-8') as readme_file:
                                     for line in lines:
-                                        if "Dictamen CEIB" in line and file not in line:
+                                        if "Dictamen CEI" in line and file not in line:
                                             line = line + ' ' + file + '\n'
                                         readme_file.write(line)
                                 break
                     # Check for Data Model xlsx file
                     data_model_status = "NO"
                     for dirpath, dirnames, filenames in os.walk(repo_path):
-                        for file in filenames:
-                            if file.endswith('.xlsx') and 'Data Model' in file:
-                                data_model_status = "YES"
-                                with open(os.path.join(repo_path, 'README.md'), 'r', encoding='utf-8') as readme_file:
-                                    lines = readme_file.readlines()
-                                with open(os.path.join(repo_path, 'README.md'), 'w', encoding='utf-8') as readme_file:
-                                    pattern = re.compile(".*- Data Model:.*")
-                                    for line in lines:
-                                        if pattern.match(line) and file not in line:
-                                            line = line + ' ' + file + '\n'
-                                        readme_file.write(line)
-                                break
-                    last_commit_date, last_commit_author = get_last_commit_info(repo_path)
+                        if codi is not None:
+                            for file in filenames:
+                                if file.endswith('.xlsx') and 'Data Model' in file and codi in file:
+                                    data_model_status = "YES"
+                                    data_model = file
+                                    with open(os.path.join(repo_path, 'README.md'), 'r', encoding='utf-8') as readme_file:
+                                        lines = readme_file.readlines()
+                                    with open(os.path.join(repo_path, 'README.md'), 'w', encoding='utf-8') as readme_file:
+                                        pattern = re.compile(".*- Data Model:.*")
+                                        for line in lines:
+                                            if pattern.match(line) and file not in line:
+                                                line = line + ' ' + file + '\n'
+                                            readme_file.write(line)
+                                    break
+                    last_commit_date, last_commit_author, last_commit_msg = get_last_commit_info(repo_path)
                     writer.writerow(
-                        [folder, codi, nom, email, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
-                            data_model_status, data_model, dictamen_cei, solicitud, pressupost])
+                        [folder, codi, project_status, nom, email, data_inici, last_commit_date, last_commit_author, last_commit_msg] + pdf_statuses + [
+                            ceim_status, data_model_status, data_model, dictamen_cei, solicitud, pressupost])
             except git.InvalidGitRepositoryError:
                 print(f"{folder} is not a valid Git repository. Skipping...")
-                writer.writerow([folder, codi, nom, email, data_inici, 'not a repo', 'not a repo'] + pdf_statuses + [
-                    data_model_status, data_model, dictamen_cei, solicitud, pressupost])
+                last_commit_date, last_commit_author, last_commit_msg = None, None, None
+                writer.writerow(
+                    [folder, codi, project_status, nom, email, data_inici, last_commit_date, last_commit_author,
+                     last_commit_msg] + pdf_statuses + [
+                        ceim_status, data_model_status, data_model, dictamen_cei, solicitud, pressupost])
                 continue
             except PermissionError:
                 print(f"Permission denied for {folder}. Skipping...")
-                writer.writerow([folder, codi, nom, email, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
-                    data_model_status, data_model, dictamen_cei, solicitud, pressupost])
+                writer.writerow(
+                    [folder, codi, project_status, nom, email, data_inici, last_commit_date, last_commit_author,
+                     last_commit_msg] + pdf_statuses + [
+                        ceim_status, data_model_status, data_model, dictamen_cei, solicitud, pressupost])
                 continue
 def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixes: list = None, append_to_csv: bool = False):
     # This function is similar to scan_repos_and_create_csv, but it doesn't write to the README.md files
@@ -148,9 +165,12 @@ def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixe
 
     with open(csv_file, 'a' if append_to_csv else 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["Folder Name", "Codi", "Sol·licitant", "Correu", "Data Inici", "Last Commit Date",
-                         "Last Commit Author"] + pdf_prefixes + ["Dictamen_CEI", "Data Model", "data_model",
-                                                                 "dictamen_cei", "solicitud", "pressupost"])
+        if not append_to_csv:
+            writer.writerow(["Folder Name", "Codi", "Status", "Sol·licitant", "Correu", "Data Inici", "Last Commit Date",
+                            "Last Commit Author", "Last Commit msg"] + pdf_prefixes + ["Dictamen_CEI", "Data Model",
+                                                                                    "data_model",
+                                                                                    "dictamen_cei", "solicitud",
+                                                                                    "pressupost"])
         for folder in os.listdir(dir_path):
             repo_path = os.path.join(dir_path, folder)
             try:
@@ -166,8 +186,9 @@ def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixe
                     dictamen_cei = extract_field_from_readme(repo_path, "- Dictamen CEIB:")
                     solicitud = extract_field_from_readme(repo_path, "- Sol·licitud:")
                     pressupost = extract_field_from_readme(repo_path, "- Pressupost:")
-                    nom = extract_field_from_readme(repo_path, "	- Nom: ")
+                    nom = extract_field_from_readme(repo_path, "	- Nom:")
                     email = extract_field_from_readme(repo_path, "	- Correu:")
+                    project_status = extract_status_from_readme(repo_path)
                     pdf_statuses = []
                     for prefix in pdf_prefixes:
                         status = "NO"
@@ -179,6 +200,10 @@ def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixe
                                         try:
                                             datetime.strptime(date_part, '%Y%m%d')
                                             status = "YES"
+                                            if prefix == 'SSPT':
+                                                solicitud = file
+                                            if prefix == 'PSPT':
+                                                pressupost = file
                                             if is_pdf_signed(os.path.join(dirpath, file)):
                                                 status = "SIGNED"
                                         except ValueError:
@@ -190,6 +215,7 @@ def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixe
                         for file in filenames:
                             if re.match(r'^.*Dictamen_CEI.*\.pdf$', file) and os.path.exists(os.path.join(repo_path, 'README.md')):
                                 ceim_status = "YES"
+                                dictamen_cei = file
                                 if is_pdf_signed(os.path.join(dirpath, file)):
                                     ceim_status = "SIGNED"
                                 break
@@ -200,19 +226,27 @@ def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixe
                             for file in filenames:
                                 if file.endswith('.xlsx') and 'Data Model' in file and codi in file:
                                     data_model_status = "YES"
-                    last_commit_date, last_commit_author = get_last_commit_info(repo_path)
+                                    data_model = file
+                                    break
+                    last_commit_date, last_commit_author, last_commit_msg = get_last_commit_info(repo_path)
                     writer.writerow(
-                        [folder, codi, nom, email, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
-                            data_model_status, data_model, dictamen_cei, solicitud, pressupost])
+                        [folder, codi, project_status, nom, email, data_inici, last_commit_date, last_commit_author,
+                         last_commit_msg] + pdf_statuses + [
+                            ceim_status, data_model_status, data_model, dictamen_cei, solicitud, pressupost])
             except git.InvalidGitRepositoryError:
                 print(f"{folder} is not a valid Git repository. Skipping...")
-                writer.writerow([folder, codi, nom, email, data_inici, 'not a repo', 'not a repo'] + pdf_statuses + [
-                    data_model_status, data_model, dictamen_cei, solicitud, pressupost])
+                last_commit_date, last_commit_author, last_commit_msg = None, None, None
+                writer.writerow(
+                    [folder, codi, project_status, nom, email, data_inici, last_commit_date, last_commit_author,
+                     last_commit_msg] + pdf_statuses + [
+                        ceim_status, data_model_status, data_model, dictamen_cei, solicitud, pressupost])
                 continue
             except PermissionError:
                 print(f"Permission denied for {folder}. Skipping...")
-                writer.writerow([folder, codi, nom, email, data_inici, last_commit_date, last_commit_author] + pdf_statuses + [
-                    data_model_status, data_model, dictamen_cei, solicitud, pressupost])
+                writer.writerow(
+                    [folder, codi, project_status, nom, email, data_inici, last_commit_date, last_commit_author,
+                     last_commit_msg] + pdf_statuses + [
+                        ceim_status, data_model_status, data_model, dictamen_cei, solicitud, pressupost])
                 continue
 def is_pdf_signed(file_path):
     """
@@ -240,8 +274,8 @@ def extract_field_from_readme(repo_path: str, field: str) -> Optional[str]:
         try:
             with open(readme_path, 'r', encoding=encoding) as file:
                 for line in file:
-                    if line.startswith(field):
-                        return line[len(field):].strip()
+                    if line.strip().startswith(field):
+                        return line[len(field):].replace(':', '').strip()
         except UnicodeDecodeError:
             continue
         except FileNotFoundError:
@@ -249,5 +283,18 @@ def extract_field_from_readme(repo_path: str, field: str) -> Optional[str]:
             return None
     print(f"Could not decode {readme_path} with any of the tried encodings.")
     return None
+
+
+
+def extract_status_from_readme(repo_path: str) -> Optional[str]:
+    readme_path = os.path.join(repo_path, 'README.md')
+    if os.path.exists(readme_path):
+        with open(readme_path, 'r', encoding='ISO-8859-1') as f:
+            lines = f.readlines()
+            for i, line in enumerate(lines):
+                if line.strip() == "### Status":
+                    return lines[i+1].strip() if i+1 < len(lines) else None
+    return None
+
 # Usage
 # scan_repos_and_create_csv('/path/to/your/folder', 'output.csv')
