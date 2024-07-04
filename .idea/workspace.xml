@@ -4,10 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="32fb19e0-a4c8-4e81-abb7-9aabec5eab0e" name="Changes" comment="&quot;Implemented UTF-8 encoding for README.md file reading and added functionality to write filenames to README.md&quot;">
+    <list default="true" id="32fb19e0-a4c8-4e81-abb7-9aabec5eab0e" name="Changes" comment="&quot;Implemented UTF-8 encoding for README.md file reading and added functionality to write filenames to README.md Add UI for displaying and editing table data with saving to README files&quot;">
+      <change afterPath="$PROJECT_DIR$/UI2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/PRISIBLlistaProjectes.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PRISIBLlistaProjectes.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/UI.py" beforeDir="false" afterPath="$PROJECT_DIR$/UI.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SSPT_YYYYMMDD_PRISIB_NOMIP_ENG.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/UI.exe" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -51,13 +55,15 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_ADD_EXTERNAL_FILES": "true",
-    "Python.UI.executor": "Debug",
+    "Python.UI.executor": "Run",
+    "Python.UI2.executor": "Run",
     "Python.main.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master",
+    "git-widget-placeholder": "30f21e9b",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/Pau/Documents/PRISIBLlistaProjectes/UI.py",
-    "settings.editor.selected.configurable": "Errors"
+    "last_opened_file_path": "C:/Users/Pau/Documents/PRISIB-P2410-LlistaProjectes",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RunManager">
@@ -70,7 +76,6 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="SDK_NAME" value="Python 3.12 (PRISIBLlistaProjectes)" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -88,7 +93,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-0509580d9d50-746f403e7f0c-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.14494.241" />
+        <option value="bundled-python-sdk-48aec45f0201-746f403e7f0c-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.17011.127" />
       </set>
     </attachedChunks>
   </component>
@@ -144,15 +149,21 @@
     <MESSAGE value="1st" />
     <MESSAGE value="2nd" />
     <MESSAGE value="&quot;Implemented UTF-8 encoding for README.md file reading and added functionality to write filenames to README.md&quot;" />
-    <option name="LAST_COMMIT_MESSAGE" value="&quot;Implemented UTF-8 encoding for README.md file reading and added functionality to write filenames to README.md&quot;" />
+    <MESSAGE value="&quot;Implemented UTF-8 encoding for README.md file reading and added functionality to write filenames to README.md Add UI for displaying and editing table data with saving to README files&quot;" />
+    <option name="LAST_COMMIT_MESSAGE" value="&quot;Implemented UTF-8 encoding for README.md file reading and added functionality to write filenames to README.md Add UI for displaying and editing table data with saving to README files&quot;" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main.py</url>
-          <line>191</line>
-          <option name="timeStamp" value="1" />
+          <line>309</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>188</line>
+          <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

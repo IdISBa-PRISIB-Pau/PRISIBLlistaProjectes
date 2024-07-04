@@ -43,7 +43,7 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
     if pdf_prefixes is None:
         pdf_prefixes = ['SSPT','PSPT']
 
-    with open(csv_file, 'a' if append_to_csv else 'w', newline='') as file:
+    with open(csv_file, 'a' if append_to_csv else 'w', newline='',encoding='utf-8') as file:
         writer = csv.writer(file)
         if not append_to_csv:
             writer.writerow(["Folder Name", "Codi", "Status", "Sol·licitant", "Correu", "Data Inici", "Last Commit Date",
@@ -54,6 +54,7 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                                                                                                   "solicitud",
                                                                                                   "pressupost"])
         for folder in os.listdir(dir_path):
+            folder = os.fsdecode(folder)
             repo_path = os.path.join(dir_path, folder)
             try:
                 if os.path.isdir(repo_path):
@@ -61,6 +62,10 @@ def scan_repos_and_create_csv(dir_path: str, csv_file: str, pdf_prefixes: list =
                     if codi is not None:
                         codi = codi.replace("PRISIB","").strip()  # Strip the "PRISIB" prefix
                         codi = codi.replace(" ","").strip()  # Strip the "PRISIB" prefix
+                    else:
+                        codi_parts = os.path.basename(repo_path).split("-")
+                        if len(codi_parts) > 1:
+                            codi = codi_parts[1].strip()
                     data_inici = extract_field_from_readme(repo_path, "- Data inici:")
                     data_model = extract_field_from_readme(repo_path, "- Data Model:")
                     dictamen_cei = extract_field_from_readme(repo_path, "- Dictamen CEIB:")
@@ -163,7 +168,7 @@ def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixe
     if pdf_prefixes is None:
         pdf_prefixes = ['SSPT','PSPT']
 
-    with open(csv_file, 'a' if append_to_csv else 'w', newline='') as file:
+    with open(csv_file, 'a' if append_to_csv else 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         if not append_to_csv:
             writer.writerow(["Folder Name", "Codi", "Status", "Sol·licitant", "Correu", "Data Inici", "Last Commit Date",
@@ -172,6 +177,7 @@ def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixe
                                                                                     "dictamen_cei", "solicitud",
                                                                                     "pressupost"])
         for folder in os.listdir(dir_path):
+            folder = os.fsdecode(folder)
             repo_path = os.path.join(dir_path, folder)
             try:
                 if os.path.isdir(repo_path):
@@ -180,6 +186,9 @@ def scan_repos_and_create_csv_no_write(dir_path: str, csv_file: str, pdf_prefixe
                         codi = codi.replace("PRISIB", "").strip()  # Strip the "PRISIB" prefix
                         codi = codi.replace(" ", "").strip()  # Strip the "PRISIB" prefix
                     else:
+                        codi_parts = os.path.basename(repo_path).split("-")
+                        if len(codi_parts) > 1:
+                            codi = codi_parts[1].strip()
                         print(f"No 'Codi' field found in README.md for {repo_path}")
                     data_inici = extract_field_from_readme(repo_path, "- Data inici:")
                     data_model = extract_field_from_readme(repo_path, "- Data Model:")
@@ -269,7 +278,7 @@ def is_pdf_signed(file_path):
 
 def extract_field_from_readme(repo_path: str, field: str) -> Optional[str]:
     readme_path = os.path.join(repo_path, 'README.md')
-    encodings = ['utf-8', 'ISO-8859-1', 'windows-1252']  # Add more encodings if needed
+    encodings = ['windows-1252', 'utf-8', 'ISO-8859-1']  # Add more encodings if needed
     for encoding in encodings:
         try:
             with open(readme_path, 'r', encoding=encoding) as file:
@@ -281,20 +290,26 @@ def extract_field_from_readme(repo_path: str, field: str) -> Optional[str]:
         except FileNotFoundError:
             print(f"{readme_path} Not Found")
             return None
-    print(f"Could not decode {readme_path} with any of the tried encodings.")
     return None
 
 
 
 def extract_status_from_readme(repo_path: str) -> Optional[str]:
     readme_path = os.path.join(repo_path, 'README.md')
-    if os.path.exists(readme_path):
-        with open(readme_path, 'r', encoding='ISO-8859-1') as f:
-            lines = f.readlines()
-            for i, line in enumerate(lines):
-                if line.strip() == "### Status":
-                    return lines[i+1].strip() if i+1 < len(lines) else None
-    return None
+    encodings = ['windows-1252', 'utf-8', 'ISO-8859-1']  # Add more encodings if needed
+    for encoding in encodings:
+        try:
+            if os.path.exists(readme_path):
+                with open(readme_path, 'r', encoding=encoding) as f:
+                    lines = f.readlines()
+                    for i, line in enumerate(lines):
+                        if line.strip() == "### Status":
+                            return lines[i+1].strip() if i+1 < len(lines) else None
 
+        except UnicodeDecodeError:
+            continue
+        except FileNotFoundError:
+            print(f"{readme_path} Not Found")
+            return None
 # Usage
 # scan_repos_and_create_csv('/path/to/your/folder', 'output.csv')

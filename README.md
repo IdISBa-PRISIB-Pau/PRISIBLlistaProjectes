@@ -7,13 +7,13 @@
 
 
 ### Dades del projecte
-- Codi: P
+- Codi: 
 - Data inici:15/04/2024
 - Tipus de tasca: 
 - Sol·licitud: 
 - Contacte:
 	- Nom: Pau Pericàs
-	- Correu:
+- Correu: 
 - Projecte:
 	- Titol: 
 	- Protocol:
