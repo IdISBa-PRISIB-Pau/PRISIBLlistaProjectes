@@ -311,5 +311,45 @@ def extract_status_from_readme(repo_path: str) -> Optional[str]:
         except FileNotFoundError:
             print(f"{readme_path} Not Found")
             return None
+
+def update_readme_files_from_csv(dir_path: str, csv_file: str):
+    encodings = ['utf-8', 'ISO-8859-1', 'windows-1252']
+    for encoding in encodings:
+        try:
+            with open(csv_file, 'r', encoding=encoding) as file:
+                reader = csv.reader(file)
+                headers = next(reader)
+                status_index = headers.index("Status")
+                for row in reader:
+                    folder = row[0]
+                    status = row[status_index]
+                    readme_path = os.path.join(dir_path, folder, 'README.md')
+                    if os.path.exists(readme_path):
+                        for readme_encoding in encodings:
+                            try:
+                                with open(readme_path, 'r', encoding=readme_encoding) as f:
+                                    lines = f.readlines()
+                                status_exists = any(line.strip() == "### Status" for line in lines)
+                                if status_exists:
+                                    for i, line in enumerate(lines):
+                                        if line.strip() == "### Status":
+                                            if status is not None:
+                                                if i + 1 < len(lines):
+                                                    lines[i + 1] = status + '\n\n'
+                                                else:
+                                                    lines.append(status + '\n\n')
+                                            break
+                                else:
+                                    if status is not None:
+                                        lines.insert(2, "### Status\n")
+                                        lines.insert(3, status + '\n\n')
+                                with open(readme_path, 'w', encoding='utf-8') as f:
+                                    f.writelines(lines)
+                                break
+                            except UnicodeDecodeError:
+                                continue
+                break
+        except UnicodeDecodeError:
+            continue
 # Usage
 # scan_repos_and_create_csv('/path/to/your/folder', 'output.csv')

@@ -2,18 +2,18 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 import csv
 import os
-
+import main  # Import the main module
 
 def browse_directory(entry):
     directory = filedialog.askdirectory()
     entry.delete(0, tk.END)
     entry.insert(0, directory)
 
-
 def browse_file(entry):
     file = filedialog.asksaveasfilename(defaultextension=".csv")
     entry.delete(0, tk.END)
     entry.insert(0, file)
+
 def load_csv_data(csv_file):
     data = []
     with open(csv_file, 'r', encoding='utf-8') as file:
@@ -28,20 +28,6 @@ def save_csv_data(csv_file, headers, data):
         writer = csv.writer(file)
         writer.writerow(headers)
         writer.writerows(data)
-
-def update_readme_files_from_table(dir_path, headers, data):
-    for row in data:
-        folder = row[0]
-        readme_path = os.path.join(dir_path, folder, 'README.md')
-        if os.path.exists(readme_path):
-            with open(readme_path, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-            with open(readme_path, 'w', encoding='utf-8') as f:
-                for i, line in enumerate(lines):
-                    for j, header in enumerate(headers):
-                        if line.strip().startswith(f"- {header}:"):
-                            lines[i] = f"- {header}: {row[j]}\n"
-                f.writelines(lines)
 
 def on_cell_double_click(event):
     item = tree.selection()[0]
@@ -65,7 +51,7 @@ def on_save_button_click():
         row = tree.item(row_id)['values']
         data.append(row)
     save_csv_data(file_entry.get(), headers, data)
-    update_readme_files_from_table(dir_entry.get(), headers, data)
+    main.update_readme_files_from_csv(dir_entry.get(), file_entry.get())  # Call the existing function
 
 root = tk.Tk()
 root.geometry('800x600')
